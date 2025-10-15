@@ -105,3 +105,28 @@ async def delete_wallet(id:str):
     if wallet:
         await wallet_collection.delete_one({"_id":ObjectId(id)})
         return True
+    
+# transactions crud collection
+
+async def add_transactions(transfer_data:dict)->dict:
+    transaction=await transaction_collection.insert_one(transfer_data)
+    new_transaction=await transaction_collection.find_one({"_id": transaction.inserted_id})
+    return transfer_helper(new_transaction)
+
+async def retrive_transactions (user_id:str):
+    transactions = []
+    async for transaction in transaction_collection.find({'user_id': user_id}):
+        transactions.append(transfer_helper(transaction))
+    return transactions
+        
+    
+async def retrive_transaction_by_id(transaction_id:str):
+    transaction= await transaction_collection.find_one({'_id': ObjectId(transaction_id)})
+    if transaction:
+        return transfer_helper(transaction)
+
+async def delete_transaction(transaction_id:str):
+    transaction= await transaction_collection.find_one({'_id': ObjectId(transaction_id)})
+    if transaction:
+        await transaction_collection.delete_one({'_id': ObjectId(transaction_id)})
+        return True

@@ -113,9 +113,11 @@ async def add_transactions(transfer_data:dict)->dict:
     new_transaction=await transaction_collection.find_one({"_id": transaction.inserted_id})
     return transfer_helper(new_transaction)
 
-async def retrive_transactions (user_id:str):
+async def retrive_transactions(user_id: str):
     transactions = []
-    async for transaction in transaction_collection.find({'user_id': user_id}):
+    async for transaction in transaction_collection.find({
+        "$or": [{"from_user": user_id}, {"to_user": user_id}]
+    }):
         transactions.append(transfer_helper(transaction))
     return transactions
         

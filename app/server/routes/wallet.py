@@ -26,3 +26,18 @@ async def add_wallet_data(wallet:WalletSchema=Body(...)):
     wallet=jsonable_encoder(wallet)
     new_wallet=await add_wallet(wallet)
     return responseModel(new_wallet,'wallet added succesfully')
+
+@router.get('/id/{id}',response_description='waller data retrive by wallet id')
+async def get_wallet(id:str):
+    wallet=await retrive_wallet(id)
+    if wallet:
+        return responseModel(wallet, "wallets data retrieved successfully")
+    return ErrorResponseModel(wallet, "Empty list returned")
+
+@router.get('/user/{user_id}',response_description='waller data retrive by user id')
+async def get_wallet(user_id:str):
+    wallet=await retrieve_wallet_by_user(user_id)
+    if wallet:
+        return responseModel(wallet, "wallets data retrieved successfully")
+    return ErrorResponseModel(wallet, "Empty list returned")
+

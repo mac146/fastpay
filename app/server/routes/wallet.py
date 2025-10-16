@@ -35,7 +35,7 @@ async def get_wallet(id:str):
     return ErrorResponseModel(wallet,404, "Empty list returned")
 
 @router.get('/user/{user_id}',response_description='waller data retrive by user id')
-async def get_wallet(user_id:str):
+async def get_wallet_user(user_id:str):
     wallet=await retrieve_wallet_by_user(user_id)
     if wallet:
         return responseModel(wallet, "wallets data retrieved successfully")

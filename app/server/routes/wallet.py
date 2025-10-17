@@ -39,7 +39,7 @@ async def get_wallet_user(user_id:str):
     wallet=await retrieve_wallet_by_user(user_id)
     if wallet:
         return responseModel(wallet, "wallets data retrieved successfully")
-    return ErrorResponseModel(wallet, "Empty list returned")
+    return ErrorResponseModel(wallet, 404,"Empty list returned")
 
 @router.put('/{user_id}',response_description='updating wallet data')
 async def update_wallet_data(user_id:str,req:WalletUpdateModel):

@@ -32,14 +32,14 @@ async def get_users():
     users=await retrive_users()
     if users:
         return responseModel(users, "users data retrieved successfully")
-    return ErrorResponseModel(users, "Empty list returned")
+    return ErrorResponseModel(users,404, "Empty list returned")
 
 @router.get('/{id}',response_description='user data retrieved')
 async def get_user(id:str):
     user=await retrive_user(id)
     if user:
         return responseModel(user, "users data retrieved successfully")
-    return ErrorResponseModel(user, "Empty list returned")
+    return ErrorResponseModel(user,404, "Empty list returned")
 
 @router.put('/{id}',response_description='updating user data')
 async def update_user_data(id:str,req:UserModel):

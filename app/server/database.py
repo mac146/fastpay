@@ -2,10 +2,14 @@ import os
 from dotenv import load_dotenv
 import motor.motor_asyncio
 from bson.objectid import ObjectId
+from datetime import datetime
+
 load_dotenv()
 MONGO_DETAILS=os.getenv('MONGO_DETAILS')
 client=motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)
+
 database=client.fastpay
+
 user_collection=database.get_collection('users')
 wallet_collection=database.get_collection('wallet')
 transaction_collection=database.get_collection('transaction')
@@ -25,14 +29,15 @@ def wallet_helper(wallet) -> dict:
         "currency": wallet["currency"]
     }
 
-def transfer_helper(transfer)-> dict:
+def transaction_helper(transaction)-> dict:
     return {
-        'from_user':transfer['from_user'],
-        'to_user':transfer['to_user'],
-        'amount':transfer['amount'],
-        'type':transfer['type'],  
-        'status':transfer['status'],
-        'timestamp': transfer['timestamp']
+        "id": str(transaction["_id"]),
+        'from_user':transaction['from_user'],
+        'to_user':transaction['to_user'],
+        'amount':transaction['amount'],
+        'type':transaction['type'],  
+        'status':transaction['status'],
+        'timestamp': transaction['timestamp']
   }
 
 #users crud collection
@@ -51,6 +56,12 @@ async def retrive_user(id:str)->dict:
 async def add_user(user_data:dict)->dict:
     user=await user_collection.insert_one(user_data)
     new_user=await user_collection.find_one({"_id": user.inserted_id})
+    wallet_data = {
+        "user_id": str(new_user["_id"]),
+        "balance": 0.0,
+        "currency": "USD"
+    }
+    await add_wallet(wallet_data) 
     return user_helper(new_user)
 
 async def update_user(id:str,data:dict):
@@ -108,24 +119,48 @@ async def delete_wallet(id:str):
     
 # transactions crud collection
 
-async def add_transactions(transfer_data:dict)->dict:
-    transaction=await transaction_collection.insert_one(transfer_data)
-    new_transaction=await transaction_collection.find_one({"_id": transaction.inserted_id})
-    return transfer_helper(new_transaction)
+async def create_transaction(from_user_id: str, to_user_id: str, amount: float, t_type="transaction") -> dict:
+    
+    # Retrieve wallets automatically
+    from_wallet = await retrieve_wallet_by_user(from_user_id)
+    to_wallet = await retrieve_wallet_by_user(to_user_id)
+    if not from_wallet or not to_wallet:
+        return {"error": "Invalid user or wallet"}
+
+    # Check sufficient balance
+    if from_wallet["balance"] < amount:
+        return {"error": "Insufficient balance"}
+
+    # Update balances atomically
+    await wallet_collection.update_one({"_id": ObjectId(from_wallet["id"])}, {"$inc": {"balance": -amount}})
+    await wallet_collection.update_one({"_id": ObjectId(to_wallet["id"])}, {"$inc": {"balance": amount}})
+
+    # Create transaction record
+    transaction_data = {
+        "from_user": from_user_id,
+        "to_user": to_user_id,
+        "amount": amount,
+        "type": t_type,
+        "status": "success",
+        "timestamp": datetime.utcnow()  # <-- NEW: auto timestamp
+    }
+    transaction = await transaction_collection.insert_one(transaction_data)
+    new_transaction = await transaction_collection.find_one({"_id": transaction.inserted_id})
+    return transaction_helper(new_transaction)
 
 async def retrive_transactions(user_id: str):
     transactions = []
     async for transaction in transaction_collection.find({
         "$or": [{"from_user": user_id}, {"to_user": user_id}]
     }):
-        transactions.append(transfer_helper(transaction))
+        transactions.append(transaction_helper(transaction))
     return transactions
         
     
 async def retrive_transaction_by_id(transaction_id:str):
     transaction= await transaction_collection.find_one({'_id': ObjectId(transaction_id)})
     if transaction:
-        return transfer_helper(transaction)
+        return transaction_helper(transaction)
 
 async def delete_transaction(transaction_id:str):
     transaction= await transaction_collection.find_one({'_id': ObjectId(transaction_id)})

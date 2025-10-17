@@ -2,7 +2,7 @@ from typing import Optional,Literal
 from pydantic import Field,BaseModel
 from datetime import datetime
 
-class TransferSchema(BaseModel):
+class TransactionSchema(BaseModel):
     from_user:Optional[str]
     to_user:str=Field(...)
     amount:float=Field(...,gt=0.0)

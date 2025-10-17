@@ -104,7 +104,11 @@ async def update_wallet(user_id:str,data:dict):
     
     if "balance" in data and data["balance"] < 0:
         return False
-    wallet=await wallet_collection.find_one({'user_id': user_id})
+    print("User ID:", user_id)
+    print("Update Data:", data)
+    wallet = await wallet_collection.find_one({'user_id': user_id})
+    print("Wallet found:", wallet)
+    
     if wallet:
         updated_wallet=await wallet_collection.update_one({"user_id":user_id},{"$set":data})
         if updated_wallet.modified_count > 0:
